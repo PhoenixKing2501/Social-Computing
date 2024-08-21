@@ -7,4 +7,6 @@ RUN pip install --upgrade pip && \
 
 COPY ubuntu/* /root/
 
+WORKDIR /app/src
+
 CMD ["bash"]
