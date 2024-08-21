@@ -1,0 +1,12 @@
+name: social-computing-assignment-1
+
+services:
+  snap-container:
+    build: .
+    container_name: snap-container
+    hostname: snap-container
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+    tty: true
+    stdin_open: true
