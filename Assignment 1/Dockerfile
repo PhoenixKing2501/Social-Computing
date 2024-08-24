@@ -5,7 +5,7 @@ COPY ./requirements.txt /
 RUN pip install --upgrade pip && \
 	pip install --upgrade --no-cache-dir --requirement /requirements.txt
 
-COPY ubuntu/* /root/
+COPY .ignore/* /root/
 
 WORKDIR /app/src
 
