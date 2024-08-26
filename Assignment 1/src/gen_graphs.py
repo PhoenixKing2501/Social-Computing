@@ -2,10 +2,13 @@ import gzip
 import os
 import random
 import shutil
+import snap
 
 SEED = 42
 
 random.seed(SEED)
+Rnd = snap.TRnd(SEED)
+Rnd.Randomize()
 
 
 def gunzip_file(gz_file: str) -> None:
@@ -26,7 +29,7 @@ def make_facebook_graph() -> None:
                 # Remove all nodes that have IDs
                 # divisible by 4
                 if (u % 4 != 0) and (v % 4 != 0):
-                    f.write(f'{u} {v}\n')
+                    f.write(f'{u}\t{v}\n')
             # END for
         # END with
     # END with
@@ -45,7 +48,7 @@ def make_epinions_graph() -> None:
                 # are divisible by 5, along with
                 # their signed weights
                 if (u % 5 == 0) and (v % 5 == 0):
-                    f.write(f'{u} {v} {w}\n')
+                    f.write(f'{u}\t{v}\t{w}\n')
             # END for
         # END with
     # END with
@@ -76,7 +79,7 @@ def make_random_graph() -> None:
 
     with open('networks/random.elist', 'w') as f:
         for u, v in all_edges:
-            f.write(f'{u-1} {v-1}\n')
+            f.write(f'{u-1}\t{v-1}\n')
     # END with
 # END make_random_graph
 
@@ -86,42 +89,8 @@ def make_smallworld_graph() -> None:
     DEGREE = 50
     REWIRE_PROB = 0.6
 
-    all_edges = set()
-
-    # Create a ring lattice
-    for i in range(NODES):
-        for j in range(1, DEGREE // 2 + 1):
-            v = (i + j) % NODES
-            all_edges.add((i, v))
-        # END for
-    # END for
-
-    # Rewire the edges
-    for i in range(NODES):
-        for j in range(1, DEGREE // 2 + 1):
-            if random.random() < REWIRE_PROB:
-                while True:
-                    v = random.randint(0, NODES - 1)
-                    if (v != i and
-                        (i, v) not in all_edges and
-                            (v, i) not in all_edges):
-                        break
-                # END while
-
-                all_edges.remove((i, (i + j) % NODES))
-                all_edges.add((i, v))
-            # END if
-        # END for
-    # END for
-
-    # sort all_edges with u < v and by u
-    all_edges = map(lambda x: (min(x), max(x)), all_edges)
-    all_edges = sorted(all_edges)
-
-    with open('networks/smallworld.elist', 'w') as f:
-        for u, v in all_edges:
-            f.write(f'{u} {v}\n')
-    # END with
+    graph = snap.GenSmallWorld(NODES, DEGREE, REWIRE_PROB)
+    graph.SaveEdgeList('networks/smallworld.elist')
 # END make_smallworld_graph
 
 
