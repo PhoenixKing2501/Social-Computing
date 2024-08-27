@@ -1,9 +1,10 @@
-import os
-from typing import Dict, List
-import matplotlib.pyplot as plt
-import sys
+import heapq
 import math
+import os
+import sys
+from typing import Dict, List
 
+import matplotlib.pyplot as plt
 import snap
 
 SEED = 42
@@ -18,17 +19,12 @@ def makeDir(directory: str):
 
 
 def allNodesMaxDeg(graph):
-    maxDeg = 0
-    maxNodes: List[int] = []
-    for NI in graph.Nodes():
-        if NI.GetDeg() > maxDeg:
-            maxDeg = NI.GetDeg()
-            maxNodes = [NI.GetId()]
-        elif NI.GetDeg() == maxDeg:
-            maxNodes.append(NI.GetId())
-        # END if NI.GetDeg() > maxDeg
-    # END for NI in graph.Nodes()
-
+    degrees = [(item.GetVal2(), item.GetVal1())
+               for item in graph.GetNodeInDegV()]
+    deg = max(degrees)[0]
+    maxNodes = (item[1]
+                for item in degrees
+                if item[0] == deg)
     return (str(node) for node in maxNodes)
 # END allNodesMaxDeg
 
@@ -44,7 +40,7 @@ def plotDegDist(graph, name):
 
     # add lines joining the points
     plt.plot(x, y, 'r-')
-    # plt.scatter(x, y, color='b')
+    plt.scatter(x, y, color='b', marker='x')
     plt.xlabel('Log10(Degree)')
     plt.ylabel('Log10(Count)')
     plt.title('Degree Distribution')
@@ -79,7 +75,7 @@ def plotShortestPathDist(graph, name):
 
     # add lines joining the points
     plt.plot(x, y, 'r-')
-    # plt.scatter(x, y, color='b')
+    plt.scatter(x, y, color='b', marker='x')
     plt.xlabel('Shortest Path Length')
     plt.ylabel('Log10(Count)')
     plt.title('Shortest Path Distribution')
@@ -99,7 +95,7 @@ def plotConCompSzDist(graph, name):
 
     # add lines joining the points
     plt.plot(x, y, 'r-')
-    # plt.scatter(x, y, color='b')
+    plt.scatter(x, y, color='b', marker='x')
     plt.xlabel('Log10(Connected Component Size)')
     plt.ylabel('Log10(Count)')
     plt.title('Connected Component Size Distribution')
@@ -110,21 +106,45 @@ def plotConCompSzDist(graph, name):
 
 def plotCCDist(graph, name):
     NIdCCfH = graph.GetNodeClustCfAll()
-    # Need to consult sir for this
 
-    # convert to log scale
-    x = [math.log10(item) for item in x]
-    y = [math.log10(item) for item in y]
+    x = NIdCCfH.values()
 
-    # add lines joining the points
-    plt.plot(x, y, 'r-')
-    # plt.scatter(x, y, color='b')
-    plt.xlabel('Log10(Clustering Coefficient)')
-    plt.ylabel('Log10(Count)')
+    # plot histogram
+    plt.hist(x, bins=100, color='b', edgecolor='black')
+    # add lines joining the midpoints of the bars
+    plt.xlabel('Clustering Coefficient')
+    plt.ylabel('Count')
     plt.title('Clustering Coefficient Distribution')
     plt.savefig(f'plots/clustering_coeff_{name}.png')
     plt.close()
 # END plotCCDist
+
+
+def getTopKDegNodes(graph, k: int):
+    degrees = ((item.GetVal1(), item.GetVal2())
+               for item in graph.GetNodeInDegV())
+    degrees = heapq.nlargest(k, degrees,
+                             key=lambda x: x[1])
+    return (str(item[0]) for item in degrees)
+# END getTopKDegNodes
+
+
+def getTopKClosenessCentrNodes(graph, k: int):
+    closenessCentr = ((nodeID, graph.GetClosenessCentr(nodeID))
+                      for nodeID in (node.GetId() 
+                                     for node in graph.Nodes()))
+    closenessCentr = heapq.nlargest(k, closenessCentr,
+                                    key=lambda x: x[1])
+    return (str(item[0]) for item in closenessCentr)
+# END getTopKClosenessCentrNodes
+
+
+def getTopKBetweennessCentrNodes(graph, k: int):
+    betweennessCentr, _ = graph.GetBetweennessCentr()
+    betweennessCentr = heapq.nlargest(k, betweennessCentr.items(),
+                                     key=lambda x: x[1])
+    return (str(item[0]) for item in betweennessCentr)
+# END getTopKBetweennessCentrNodes
 
 
 def main():
@@ -142,47 +162,47 @@ def main():
     if not os.path.exists('plots'):
         os.makedirs('plots')
 
-    # # Graph stats:
-    # # 1.a. Number of nodes
-    # print(f"Number of nodes: {graph.GetNodes()}")
+    # Graph stats:
+    # 1.a. Number of nodes
+    print(f"Number of nodes: {graph.GetNodes()}")
 
-    # # 1.b. Number of edges
-    # print(f"Number of edges: {graph.GetEdges()}")
+    # 1.b. Number of edges
+    print(f"Number of edges: {graph.GetEdges()}")
 
-    # # 2.a. Number of nodes which have degree = 7
-    # print(f"Number of nodes with degree=7: {graph.CntDegNodes(7)}")
+    # 2.a. Number of nodes which have degree = 7
+    print(f"Number of nodes with degree=7: {graph.CntDegNodes(7)}")
 
-    # # 2.b. Node id(s) for the node with the highest degree.
-    # print(f"Node id(s) with highest degree: "
-    #       f"{', '.join(allNodesMaxDeg(graph))}")
+    # 2.b. Node id(s) for the node with the highest degree.
+    print(f"Node id(s) with highest degree: "
+          f"{', '.join(allNodesMaxDeg(graph))}")
 
-    # # 2.c. Plot of the Degree distribution
-    # plotDegDist(graph, name)
+    # 2.c. Plot of the Degree distribution
+    plotDegDist(graph, name)
 
-    # NTestNode = 1000
-    # diameters = graph.GetBfsEffDiamAll(NTestNode, False)
-    # # 3.a. Approximate full diameter (maximum shortest path length)
-    # #      starting from 1000 random test nodes.
-    # print(f"Approximate full diameter: {diameters[0]:.4f}")
+    NTestNode = 1000
+    diameters = graph.GetBfsEffDiamAll(NTestNode, False)
+    # 3.a. Approximate full diameter (maximum shortest path length)
+    #      starting from 1000 random test nodes.
+    print(f"Approximate full diameter: {diameters[0]:.4f}")
 
-    # # 3.b. Approximate effective diameter computed starting from 1000 random test nodes.
-    # print(f"Approximate effective diameter: {diameters[2]}")
+    # 3.b. Approximate effective diameter computed starting from 1000 random test nodes.
+    print(f"Approximate effective diameter: {diameters[2]}")
 
     # 3.c. Plot of the distribution of the shortest path lengths in the network.
-    # plotShortestPathDist(graph, name)
+    plotShortestPathDist(graph, name)
 
-    # # 4.a. Fraction of nodes in the largest connected component
-    # print(f"Fraction of nodes in largest connected component: "
-    #       f"{graph.GetMxSccSz():.4f}")
+    # 4.a. Fraction of nodes in the largest connected component
+    print(f"Fraction of nodes in largest connected component: "
+          f"{graph.GetMxSccSz():.4f}")
 
-    # # 4.b. Number of edge bridges
-    # print(f"Number of edge bridges: {len(graph.GetEdgeBridges())}")
+    # 4.b. Number of edge bridges
+    print(f"Number of edge bridges: {len(graph.GetEdgeBridges())}")
 
-    # # 4.c. Number of articulation points
-    # print(f"Number of articulation points: {len(graph.GetArtPoints())}")
+    # 4.c. Number of articulation points
+    print(f"Number of articulation points: {len(graph.GetArtPoints())}")
 
-    # # 4.d. Plot of the distribution of sizes of connected components
-    # plotConCompSzDist(graph, name)
+    # 4.d. Plot of the distribution of sizes of connected components
+    plotConCompSzDist(graph, name)
 
     clustInfo, _ = graph.GetClustCfAll()
     # 5.a. Average clustering coefficient of the network
@@ -204,6 +224,18 @@ def main():
 
     # 5.e. Plot of the distribution of clustering coefficient
     plotCCDist(graph, name)
+
+    # 6.a. Degree centrality
+    print(f"Top 5 nodes by degree centrality: "
+          f"{' '.join(getTopKDegNodes(graph, 5))}")
+
+    # 6.b. Closeness centrality
+    print(f"Top 5 nodes by closeness centrality: "
+          f"{' '.join(getTopKClosenessCentrNodes(graph, 5))}")
+
+    # 6.c. Betweenness centrality
+    print(f"Top 5 nodes by betweenness centrality: "
+          f"{' '.join(getTopKBetweennessCentrNodes(graph, 5))}")
 
 # END main
 

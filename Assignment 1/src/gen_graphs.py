@@ -7,7 +7,7 @@ import snap
 SEED = 42
 
 random.seed(SEED)
-Rnd = snap.TRnd(SEED)
+Rnd = snap.TRnd(SEED)  # type: ignore
 Rnd.Randomize()
 
 
@@ -89,7 +89,7 @@ def make_smallworld_graph() -> None:
     DEGREE = 50
     REWIRE_PROB = 0.6
 
-    graph = snap.GenSmallWorld(NODES, DEGREE, REWIRE_PROB)
+    graph = snap.GenSmallWorld(NODES, DEGREE, REWIRE_PROB)  # type: ignore
     graph.SaveEdgeList('networks/smallworld.elist')
 # END make_smallworld_graph
 
