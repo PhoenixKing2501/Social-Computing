@@ -59,28 +59,8 @@ def make_random_graph() -> None:
     NODES = 1000
     EDGES = 50000
 
-    all_edges = set()
-
-    for _ in range(EDGES):
-        u, v = 0, 0
-
-        while u == v or (u, v) in all_edges:
-            u = random.randint(1, NODES)
-            v = random.randint(1, NODES)
-            if u > v:
-                u, v = v, u
-        # END while
-
-        all_edges.add((u, v))
-    # END for
-
-    # sort all_edges with u < v and by u
-    all_edges = sorted(all_edges)
-
-    with open('networks/random.elist', 'w') as f:
-        for u, v in all_edges:
-            f.write(f'{u-1}\t{v-1}\n')
-    # END with
+    graph = snap.snap.GenRndGnm(snap.TUNGraph, NODES, EDGES, False)  # type: ignore
+    graph.SaveEdgeList('networks/random.elist')
 # END make_random_graph
 
 

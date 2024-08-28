@@ -1,8 +1,8 @@
 import heapq
-import math
 import os
 import sys
-from typing import Dict, List
+from collections import defaultdict
+from typing import Dict
 
 import matplotlib.pyplot as plt
 import snap
@@ -31,18 +31,16 @@ def allNodesMaxDeg(graph):
 
 def plotDegDist(graph, name):
     DegToCntV = graph.GetDegCnt()
-    x = (item.GetVal1() for item in DegToCntV)
-    y = (item.GetVal2() for item in DegToCntV)
-
-    # convert to log scale
-    x = [math.log10(item) for item in x]
-    y = [math.log10(item) for item in y]
+    x = [item.GetVal1() for item in DegToCntV]
+    y = [item.GetVal2() for item in DegToCntV]
 
     # add lines joining the points
     plt.plot(x, y, 'r-')
     plt.scatter(x, y, color='b', marker='x')
     plt.xlabel('Log10(Degree)')
     plt.ylabel('Log10(Count)')
+    plt.xscale('log')
+    plt.yscale('log')
     plt.title('Degree Distribution')
     plt.savefig(f'plots/deg_dist_{name}.png')
     plt.close()
@@ -50,7 +48,6 @@ def plotDegDist(graph, name):
 
 
 def generateShortestPathDist(graph):
-    from collections import defaultdict
 
     hop_count: Dict[int, int] = defaultdict(int)
 
@@ -70,14 +67,12 @@ def plotShortestPathDist(graph, name):
     x = list(hop_count.keys())
     y = list(hop_count.values())
 
-    # convert count to log scale
-    y = [math.log10(item) for item in y]
-
     # add lines joining the points
     plt.plot(x, y, 'r-')
     plt.scatter(x, y, color='b', marker='x')
     plt.xlabel('Shortest Path Length')
     plt.ylabel('Log10(Count)')
+    plt.yscale('log')
     plt.title('Shortest Path Distribution')
     plt.savefig(f'plots/shortest_path_{name}.png')
     plt.close()
@@ -86,18 +81,16 @@ def plotShortestPathDist(graph, name):
 
 def plotConCompSzDist(graph, name):
     CntV = graph.GetSccSzCnt()
-    x = (item.GetVal1() for item in CntV)
-    y = (item.GetVal2() for item in CntV)
-
-    # convert to log scale
-    x = [math.log10(item) for item in x]
-    y = [math.log10(item) for item in y]
+    x = [item.GetVal1() for item in CntV]
+    y = [item.GetVal2() for item in CntV]
 
     # add lines joining the points
     plt.plot(x, y, 'r-')
     plt.scatter(x, y, color='b', marker='x')
     plt.xlabel('Log10(Connected Component Size)')
     plt.ylabel('Log10(Count)')
+    plt.xscale('log')
+    plt.yscale('log')
     plt.title('Connected Component Size Distribution')
     plt.savefig(f'plots/connected_comp_{name}.png')
     plt.close()
@@ -110,10 +103,10 @@ def plotCCDist(graph, name):
     x = NIdCCfH.values()
 
     # plot histogram
-    plt.hist(x, bins=100, color='b', edgecolor='black')
+    plt.hist(x, bins=100, color='b', edgecolor='black', log=True)
     # add lines joining the midpoints of the bars
     plt.xlabel('Clustering Coefficient')
-    plt.ylabel('Count')
+    plt.ylabel('Log10(Count)')
     plt.title('Clustering Coefficient Distribution')
     plt.savefig(f'plots/clustering_coeff_{name}.png')
     plt.close()
@@ -131,7 +124,7 @@ def getTopKDegNodes(graph, k: int):
 
 def getTopKClosenessCentrNodes(graph, k: int):
     closenessCentr = ((nodeID, graph.GetClosenessCentr(nodeID))
-                      for nodeID in (node.GetId() 
+                      for nodeID in (node.GetId()
                                      for node in graph.Nodes()))
     closenessCentr = heapq.nlargest(k, closenessCentr,
                                     key=lambda x: x[1])
@@ -142,7 +135,7 @@ def getTopKClosenessCentrNodes(graph, k: int):
 def getTopKBetweennessCentrNodes(graph, k: int):
     betweennessCentr, _ = graph.GetBetweennessCentr()
     betweennessCentr = heapq.nlargest(k, betweennessCentr.items(),
-                                     key=lambda x: x[1])
+                                      key=lambda x: x[1])
     return (str(item[0]) for item in betweennessCentr)
 # END getTopKBetweennessCentrNodes
 
@@ -236,10 +229,8 @@ def main():
     # 6.c. Betweenness centrality
     print(f"Top 5 nodes by betweenness centrality: "
           f"{' '.join(getTopKBetweennessCentrNodes(graph, 5))}")
-
 # END main
 
 
-# END main
 if __name__ == "__main__":
     main()
