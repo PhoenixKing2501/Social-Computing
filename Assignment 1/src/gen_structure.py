@@ -134,7 +134,8 @@ def getTopKClosenessCentrNodes(graph, k: int):
 
 def getTopKBetweennessCentrNodes(graph, k: int):
     betweennessCentr, _ = graph.GetBetweennessCentr()
-    betweennessCentr = heapq.nlargest(k, betweennessCentr.items(),
+    betweennessCentr = [(nodeID, centr) for nodeID, centr in betweennessCentr.items()]
+    betweennessCentr = heapq.nlargest(k, betweennessCentr,
                                       key=lambda x: x[1])
     return (str(item[0]) for item in betweennessCentr)
 # END getTopKBetweennessCentrNodes

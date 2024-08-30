@@ -1,8 +1,7 @@
 import os
-from pprint import pp
 import sys
 from collections import defaultdict, deque
-from typing import Dict, Tuple, Set
+from typing import Deque, Dict, Set, Tuple
 
 
 class Graph(object):
@@ -56,27 +55,39 @@ def loadGraph(path: str) -> Graph:
     return graph
 # END loadGraph
 
+# Following the algorithm in wikipedia [https://en.wikipedia.org/wiki/Brandes%27_algorithm]
+
 
 def performBrandes(
     graph: Graph
-) -> Tuple[Dict[Tuple[int, int], int],
-           Dict[Tuple[int, int], int]]:
+) -> Tuple[Dict[int, Dict[int, int]],
+           Dict[int, float]]:
 
-    shortest_path_all: Dict[Tuple[int, int], int] = {}
-    num_shortest_paths_all: Dict[Tuple[int, int], int] = {}
+    shortest_path_all: Dict[int, Dict[int, int]] = {}
+    betweenness_centrality: Dict[int, float] = defaultdict(float)
 
-    for s in graph.getNodes():
+    nodes = graph.getNodes()
+    n_nodes = len(nodes)
+
+    for s in nodes:
+        dependency: Dict[int, float] = defaultdict(float)
+        previous: Dict[int, Set[int]] = defaultdict(set[int])
         num_shortest_paths: Dict[int, int] = defaultdict(int)
         shortest_path: Dict[int, int] = {}
 
         # Initialization
+
         num_shortest_paths[s] = 1
         shortest_path[s] = 0
 
-        queue = deque([s])
+        queue: Deque[int] = deque([s])
+        stack: Deque[int] = deque()
+
+        # Single-source shortest paths
 
         while queue:
             v = queue.popleft()
+            stack.append(v)
 
             for w in graph.getNeighbors(v):
                 if w not in shortest_path:
@@ -86,74 +97,56 @@ def performBrandes(
 
                 if shortest_path[w] == shortest_path[v] + 1:
                     num_shortest_paths[w] += num_shortest_paths[v]
+                    previous[w].add(v)
                 # END if shortest_path[w] == shortest_path[v] + 1
             # END for w in graph.getNeighbors(v)
         # END while queue
 
-        for v in graph.getNodes():
-            if v != s:
-                shortest_path_all[(s, v)] = shortest_path.get(v, -1)
-                num_shortest_paths_all[(s, v)] = num_shortest_paths[v]
-            # END if v != s
-        # END for v in graph.getNodes()
+        # Accumulation
+
+        while stack:
+            w = stack.pop()
+
+            for v in previous[w]:
+                dependency[v] += (num_shortest_paths[v] /
+                                  num_shortest_paths[w]) * (1 + dependency[w])
+            # END for v in previous[w]
+
+            if w != s:
+                betweenness_centrality[w] += dependency[w]
+            # END if w != s
+        # END while stack
+
+        shortest_path_all[s] = shortest_path
     # END for s in graph.getNodes()
 
-    return shortest_path_all, num_shortest_paths_all
+    for node in nodes:
+        if node not in betweenness_centrality:
+            betweenness_centrality[node] = 0.0
+        else:
+            betweenness_centrality[node] /= 2
+        # END if node not in betweenness_centrality
+    # END for node in graph.getNodes()
+
+    return shortest_path_all, betweenness_centrality
 # END performBrandes
 
 
 def getAllClosenessCentrality(
     graph: Graph,
-    shortest_path: Dict[Tuple[int, int], int]
+    shortest_path: Dict[int, Dict[int, int]]
 ) -> Dict[int, float]:
 
     closeness_centrality: Dict[int, float] = {}
 
     for node in graph.getNodes():
-        sum_shortest_path = sum(
-            value
-            for key, value in shortest_path.items()
-            if key[0] == node and value != -1
-        )
-        closeness_centrality[node] = len(graph.getNodes()) / sum_shortest_path
+        sum_shortest_path = sum(shortest_path[node].values())
+        closeness_centrality[node] = \
+            (len(graph.getNodes()) - 1) / sum_shortest_path
     # END for node in graph.getNodes()
 
     return closeness_centrality
 # END getAllClosenessCentrality
-
-
-def getAllBetweennessCentrality(
-    graph: Graph,
-    shortest_path: Dict[Tuple[int, int], int],
-    num_shortest_paths: Dict[Tuple[int, int], int]
-) -> Dict[int, float]:
-
-    betweenness_centrality: Dict[int, float] = defaultdict(float)
-
-    for i in graph.getNodes():
-        for j in graph.getNodes():
-            if i == j:
-                continue
-
-            for k in graph.getNodes():
-                if i == k or j == k:
-                    continue
-
-                if num_shortest_paths[(i, j)] == 0:
-                    continue
-
-                if shortest_path[(i, k)] + shortest_path[(k, j)] == shortest_path[(i, j)]:
-                    betweenness_centrality[k] += \
-                        num_shortest_paths[(i, k)] * \
-                        num_shortest_paths[(k, j)] / \
-                        num_shortest_paths[(i, j)]
-                # END if shortest_path[(i, k)] + shortest_path[(k, j)] == shortest_path[(i, j)]
-            # END for k in graph.getNodes()
-        # END for j in graph.getNodes()
-    # END for i in graph.getNodes()
-
-    return betweenness_centrality
-# END getAllBetweennessCentrality
 
 
 def getAllPageRank(graph):
@@ -164,6 +157,22 @@ def getAllPageRank(graph):
 def saveCentrality(centrality: Dict, name: str, type: str):
     pass
 # END saveCentrality
+
+
+def getAllClosenessCentrNodes(graph):
+    closenessCentr = {nodeID: graph.GetClosenessCentr(nodeID)
+                      for nodeID in (node.GetId()
+                                     for node in graph.Nodes())}
+    return closenessCentr
+# END getAllClosenessCentrNodes
+
+
+def getAllBetweennessCentrNodes(graph):
+    betweennessCentr, _ = graph.GetBetweennessCentr()
+    # betweennessCentr = [(nodeID, centr)
+    #                     for nodeID, centr in betweennessCentr.items()]
+    return dict(betweennessCentr)
+# END getAllBetweennessCentrNodes
 
 
 def main():
@@ -181,11 +190,12 @@ def main():
     # if not os.path.exists('centralities'):
     #     os.makedirs('centralities')
 
-    # Perform Brandes algorithm
-    shortest_path, num_shortest_paths = performBrandes(graph)
+    # Perform Brandes algorithm to get shortest path and betweenness centrality
+    shortest_path, betweenness_centrality = performBrandes(graph)
 
-    pp(shortest_path)
-    pp(num_shortest_paths)
+    # Get all closeness centrality
+    closeness_centrality = getAllClosenessCentrality(graph, shortest_path)
+
 # END main
 
 
