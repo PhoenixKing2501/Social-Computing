@@ -1,7 +1,11 @@
 import os
+import pickle
 import sys
 from collections import defaultdict, deque
+from time import perf_counter
 from typing import Deque, Dict, Set, Tuple
+
+import snap
 
 
 class Graph(object):
@@ -55,9 +59,8 @@ def loadGraph(path: str) -> Graph:
     return graph
 # END loadGraph
 
+
 # Following the algorithm in wikipedia [https://en.wikipedia.org/wiki/Brandes%27_algorithm]
-
-
 def performBrandes(
     graph: Graph
 ) -> Tuple[Dict[int, Dict[int, int]],
@@ -67,7 +70,6 @@ def performBrandes(
     betweenness_centrality: Dict[int, float] = defaultdict(float)
 
     nodes = graph.getNodes()
-    n_nodes = len(nodes)
 
     for s in nodes:
         dependency: Dict[int, float] = defaultdict(float)
@@ -134,45 +136,52 @@ def performBrandes(
 
 def getAllClosenessCentrality(
     graph: Graph,
-    shortest_path: Dict[int, Dict[int, int]]
+    shortest_path: Dict[int, Dict[int, int]],
+    normalize: bool = True
 ) -> Dict[int, float]:
 
     closeness_centrality: Dict[int, float] = {}
+    # INF = int(1e9)
 
     for node in graph.getNodes():
+        if len(shortest_path[node]) <= 1:
+            closeness_centrality[node] = 0.0
+            continue
+
         sum_shortest_path = sum(shortest_path[node].values())
-        closeness_centrality[node] = \
-            (len(graph.getNodes()) - 1) / sum_shortest_path
+        farness_centrality = sum_shortest_path / (len(shortest_path[node]) - 1)
+        if normalize:
+            farness_centrality *= (len(graph.getNodes()) - 1) / \
+                (len(shortest_path[node]) - 1)
+
+        closeness_centrality[node] = 1.0 / farness_centrality
     # END for node in graph.getNodes()
 
     return closeness_centrality
 # END getAllClosenessCentrality
 
 
-def getAllPageRank(graph):
-    pass
+def getAllPageRank(graph) -> Dict[int, float]:
+    return {node: 1.0 for node in graph.getNodes()}
 # END getAllPageRank
 
 
-def saveCentrality(centrality: Dict, name: str, type: str):
-    pass
+def saveCentrality(centrality: Dict[int, float], name: str, cntType: str):
+    with open(f'centralities/{cntType}_{name}.txt', 'w') as fb:
+        fb.write(f'# Node\t{cntType}\n')
+        for node, value in sorted(centrality.items(),
+                                  key=lambda x: x[1],
+                                  reverse=True):
+            fb.write(f'{node}\t{value:.4f}\n')
+        # END for node, value in sorted(centrality.items(),
+    # END with open(f'centralities/{name}_{cntType}.txt', 'w')
 # END saveCentrality
 
 
-def getAllClosenessCentrNodes(graph):
-    closenessCentr = {nodeID: graph.GetClosenessCentr(nodeID)
-                      for nodeID in (node.GetId()
-                                     for node in graph.Nodes())}
-    return closenessCentr
-# END getAllClosenessCentrNodes
-
-
-def getAllBetweennessCentrNodes(graph):
-    betweennessCentr, _ = graph.GetBetweennessCentr()
-    # betweennessCentr = [(nodeID, centr)
-    #                     for nodeID, centr in betweennessCentr.items()]
-    return dict(betweennessCentr)
-# END getAllBetweennessCentrNodes
+def getSnapCloseness(graph, normalize: bool = True):
+    return {nodeID: graph.GetClosenessCentr(nodeID, normalize)
+            for nodeID in (node.GetId()
+                           for node in graph.Nodes())}
 
 
 def main():
@@ -187,15 +196,44 @@ def main():
     graph: Graph = loadGraph(sys.argv[1])
 
     # Make `centralities` directory
-    # if not os.path.exists('centralities'):
-    #     os.makedirs('centralities')
+    if not os.path.exists('centralities'):
+        os.makedirs('centralities')
 
+    t = perf_counter()
     # Perform Brandes algorithm to get shortest path and betweenness centrality
     shortest_path, betweenness_centrality = performBrandes(graph)
+    t = perf_counter() - t
+    print(f"Time taken to perform Brandes algorithm: {t:.10f} seconds",
+          file=sys.stderr)
+    # Save betweenness centrality
+    saveCentrality(betweenness_centrality, name, 'betweenness')
+    # pickle.dump(shortest_path, open(f'shortest_path_{name}.pkl', 'wb'))
 
+    # shortest_path: Dict[int, Dict[int, int]] = pickle.load(
+    #     open(f'shortest_path_{name}.pkl', 'rb'))
+
+    t = perf_counter()
     # Get all closeness centrality
     closeness_centrality = getAllClosenessCentrality(graph, shortest_path)
+    t = perf_counter() - t
 
+    print(f"Time taken to get all closeness centrality: {t:.10f} seconds",
+          file=sys.stderr)
+
+    # Save closeness centrality
+    saveCentrality(closeness_centrality, name, 'closeness')
+
+    # graph1 = snap.LoadEdgeList(  # type: ignore
+    #     snap.TUNGraph, sys.argv[1], 0, 1)  # type: ignore
+    # # Get all closeness centrality
+    # snap_closeness = getSnapCloseness(graph1)
+    # saveCentrality(snap_closeness, name, 'snap_closeness')
+
+    # # Get all page rank
+    # page_rank = getAllPageRank(graph)
+
+    # # Save page rank
+    # saveCentrality(page_rank, name, 'pagerank')
 # END main
 
 
