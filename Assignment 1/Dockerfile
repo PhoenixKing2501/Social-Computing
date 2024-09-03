@@ -2,7 +2,9 @@ FROM python:3.9-slim AS base
 
 RUN apt update && \
 	apt upgrade -y && \
-	apt install -y libgomp1 && \
+	apt install -y \
+	libgomp1 \
+	procps && \
 	apt clean && \
 	rm -rf /var/lib/apt/lists/*
 
