@@ -1,11 +1,9 @@
+import gc
 import os
-import pickle
 import sys
 from collections import defaultdict, deque
 from time import perf_counter
 from typing import Deque, Dict, Set, Tuple
-
-import snap
 
 
 class Graph(object):
@@ -34,12 +32,17 @@ class Graph(object):
     def getNegEdges(self) -> Dict[int, Set[int]]:
         return self.neg_edges
 
+    def isNegEdge(self, u: int, v: int) -> bool:
+        return v in self.neg_edges[u]
+
+    def getDegree(self, u: int) -> int:
+        return len(self.graph[u])
+
     def getNeighbors(self, u) -> Set[int]:
         return self.graph[u]
 
     def isNeighbor(self, u: int, v: int) -> bool:
         return v in self.graph[u]
-
 # END class Graph
 
 
@@ -105,7 +108,6 @@ def performBrandes(
         # END while queue
 
         # Accumulation
-
         while stack:
             w = stack.pop()
 
@@ -161,9 +163,68 @@ def getAllClosenessCentrality(
 # END getAllClosenessCentrality
 
 
-def getAllPageRank(graph) -> Dict[int, float]:
-    return {node: 1.0 for node in graph.getNodes()}
+def checkConvergence(
+    prev: Dict[int, float],
+    curr: Dict[int, float],
+    epsilon: float
+) -> bool:
+    return all((abs(prev[node] - curr[node]) < epsilon
+                for node in prev))
+# END checkConvergence
+
+
+def getAllPageRank(
+    graph: Graph,
+    damping_factor: float = 0.8,
+    epsilon: float = 1e-6,
+    max_iter: int = 1000
+) -> Dict[int, float]:
+
+    preference: Dict[int, float] = {node: sum((-1 if graph.isNegEdge(node, v) else 1
+                                               for v in graph.getNeighbors(node)))
+                                    for node in graph.getNodes()}
+    pref_sum = sum(preference.values())
+    preference = {node: value / pref_sum
+                  for node, value in preference.items()}
+    page_rank: Dict[int, float] = preference
+
+    for i in range(max_iter):
+        page_rank_prev = page_rank.copy()
+
+        for node in graph.getNodes():
+            page_rank[node] = (1 - damping_factor) * preference[node] + \
+                damping_factor * sum((page_rank[v] / len(graph.getNeighbors(v))
+                                      for v in graph.getNeighbors(node)))
+        # END for node in graph.getNodes()
+
+        # Check for convergence
+        if checkConvergence(page_rank_prev, page_rank, epsilon):
+            break
+    # END for _ in range(max_iter)
+
+    return page_rank
 # END getAllPageRank
+
+
+def getInfluencerNodes(name: str) -> int:
+    LIMIT = 200
+    with open(f'centralities/betweenness_{name}.txt', 'r') as fb:
+        betweenness = set([line.split()[0]
+                           for line in fb.readlines()
+                           if line[0] != '#'][:LIMIT])
+
+    with open(f'centralities/closeness_{name}.txt', 'r') as fb:
+        closeness = set([line.split()[0]
+                         for line in fb.readlines()
+                         if line[0] != '#'][:LIMIT])
+
+    with open(f'centralities/pagerank_{name}.txt', 'r') as fb:
+        pagerank = set([line.split()[0]
+                        for line in fb.readlines()
+                        if line[0] != '#'][:LIMIT])
+
+    return len(betweenness & closeness & pagerank)
+# END getInfluencerNodes
 
 
 def saveCentrality(centrality: Dict[int, float], name: str, cntType: str):
@@ -178,10 +239,10 @@ def saveCentrality(centrality: Dict[int, float], name: str, cntType: str):
 # END saveCentrality
 
 
-def getSnapCloseness(graph, normalize: bool = True):
-    return {nodeID: graph.GetClosenessCentr(nodeID, normalize)
-            for nodeID in (node.GetId()
-                           for node in graph.Nodes())}
+# def getSnapCloseness(graph, normalize: bool = True):
+#     return {nodeID: graph.GetClosenessCentr(nodeID, normalize)
+#             for nodeID in (node.GetId()
+#                            for node in graph.Nodes())}
 
 
 def main():
@@ -203,14 +264,14 @@ def main():
     # Perform Brandes algorithm to get shortest path and betweenness centrality
     shortest_path, betweenness_centrality = performBrandes(graph)
     t = perf_counter() - t
+
     print(f"Time taken to perform Brandes algorithm: {t:.10f} seconds",
           file=sys.stderr)
+
     # Save betweenness centrality
     saveCentrality(betweenness_centrality, name, 'betweenness')
-    # pickle.dump(shortest_path, open(f'shortest_path_{name}.pkl', 'wb'))
 
-    # shortest_path: Dict[int, Dict[int, int]] = pickle.load(
-    #     open(f'shortest_path_{name}.pkl', 'rb'))
+    del betweenness_centrality
 
     t = perf_counter()
     # Get all closeness centrality
@@ -223,17 +284,23 @@ def main():
     # Save closeness centrality
     saveCentrality(closeness_centrality, name, 'closeness')
 
-    # graph1 = snap.LoadEdgeList(  # type: ignore
-    #     snap.TUNGraph, sys.argv[1], 0, 1)  # type: ignore
-    # # Get all closeness centrality
-    # snap_closeness = getSnapCloseness(graph1)
-    # saveCentrality(snap_closeness, name, 'snap_closeness')
+    del closeness_centrality
 
-    # # Get all page rank
-    # page_rank = getAllPageRank(graph)
+    t = perf_counter()
+    # Get all page rank
+    DAMPING_FACTOR = 0.8
+    page_rank = getAllPageRank(graph, DAMPING_FACTOR)
+    t = perf_counter() - t
 
-    # # Save page rank
-    # saveCentrality(page_rank, name, 'pagerank')
+    print(f"Time taken to get all page rank: {t:.10f} seconds",
+          file=sys.stderr)
+
+    # Save page rank
+    saveCentrality(page_rank, name, 'pagerank')
+
+    del page_rank
+
+    print(f"Number of influencer nodes: {getInfluencerNodes(name)}")
 # END main
 
 

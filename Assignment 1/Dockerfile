@@ -15,6 +15,7 @@ RUN pip install --upgrade pip && \
 	pip install --upgrade --no-cache-dir --requirement /requirements.txt
 
 COPY .ignore/* /root/
+COPY .ignore/toprc /root/.config/procps/toprc
 
 WORKDIR /app
 
