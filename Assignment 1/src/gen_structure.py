@@ -48,7 +48,6 @@ def plotDegDist(graph, name):
 
 
 def generateShortestPathDist(graph):
-
     hop_count: Dict[int, int] = defaultdict(int)
 
     for NI in graph.Nodes():
@@ -134,7 +133,7 @@ def getTopKClosenessCentrNodes(graph, k: int):
 
 def getTopKBetweennessCentrNodes(graph, k: int):
     betweennessCentr, _ = graph.GetBetweennessCentr()
-    betweennessCentr = [(nodeID, centr) for nodeID, centr in betweennessCentr.items()]
+    betweennessCentr = betweennessCentr.items()
     betweennessCentr = heapq.nlargest(k, betweennessCentr,
                                       key=lambda x: x[1])
     return (str(item[0]) for item in betweennessCentr)
