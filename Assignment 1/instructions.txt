@@ -1,0 +1,13 @@
+Python version used: 3.9
+
+1. Install Dependencies:
+	Requirements file is given in the repository. To install the dependencies, run the following command:
+	$ pip install -r requirements.txt
+	
+	Also run (snap requires this library):
+		$ sudo apt install libgomp1
+
+2. All codes are given in `src' folder.
+	So to run the files just do 
+		$ python src/<filename>.py <inputfile>
+

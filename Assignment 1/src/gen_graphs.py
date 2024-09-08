@@ -59,7 +59,7 @@ def make_random_graph() -> None:
     NODES = 1000
     EDGES = 50000
 
-    graph = snap.snap.GenRndGnm(snap.TUNGraph, NODES, EDGES, False)  # type: ignore
+    graph = snap.GenRndGnm(snap.TUNGraph, NODES, EDGES, False)  # type: ignore
     graph.SaveEdgeList('networks/random.elist')
 # END make_random_graph
 
