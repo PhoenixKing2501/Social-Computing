@@ -19,12 +19,12 @@ def makeDir(directory: str):
 
 
 def allNodesMaxDeg(graph):
-    degrees = [(item.GetVal2(), item.GetVal1())
+    degrees = [(item.GetVal1(), item.GetVal2())
                for item in graph.GetNodeInDegV()]
-    deg = max(degrees)[0]
-    maxNodes = (item[1]
+    deg = max(degrees, key=lambda x: x[1])[1]
+    maxNodes = (item[0]
                 for item in degrees
-                if item[0] == deg)
+                if item[1] == deg)
     return (str(node) for node in maxNodes)
 # END allNodesMaxDeg
 

@@ -1,12 +1,12 @@
-import gc
 import os
 import sys
 from collections import defaultdict, deque
-from time import perf_counter
+from copy import deepcopy
+from math import hypot
 from typing import Deque, Dict, Set, Tuple
 
 
-class Graph(object):
+class Graph():
     def __init__(self):
         self.nodes: Set[int] = set()
         self.graph: Dict[int, Set[int]] = defaultdict(set[int])
@@ -21,6 +21,7 @@ class Graph(object):
         if w < 0:
             self.neg_edges[u].add(v)
             self.neg_edges[v].add(u)
+        # END if w < 0
     # END addEdge
 
     def getNodes(self) -> Set[int]:
@@ -81,7 +82,6 @@ def performBrandes(
         shortest_path: Dict[int, int] = {}
 
         # Initialization
-
         num_shortest_paths[s] = 1
         shortest_path[s] = 0
 
@@ -89,7 +89,6 @@ def performBrandes(
         stack: Deque[int] = deque()
 
         # Single-source shortest paths
-
         while queue:
             v = queue.popleft()
             stack.append(v)
@@ -112,8 +111,9 @@ def performBrandes(
             w = stack.pop()
 
             for v in previous[w]:
-                dependency[v] += (num_shortest_paths[v] /
-                                  num_shortest_paths[w]) * (1 + dependency[w])
+                dependency[v] += ((num_shortest_paths[v] /
+                                   num_shortest_paths[w]) *
+                                  (1 + dependency[w]))
             # END for v in previous[w]
 
             if w != s:
@@ -143,18 +143,25 @@ def getAllClosenessCentrality(
 ) -> Dict[int, float]:
 
     closeness_centrality: Dict[int, float] = {}
-    # INF = int(1e9)
 
     for node in graph.getNodes():
         if len(shortest_path[node]) <= 1:
             closeness_centrality[node] = 0.0
             continue
+        # END if len(shortest_path[node]) <= 1
 
         sum_shortest_path = sum(shortest_path[node].values())
-        farness_centrality = sum_shortest_path / (len(shortest_path[node]) - 1)
+        farness_centrality = (sum_shortest_path /
+                              (len(shortest_path[node]) - 1))
+
+        # Multiply farness centrality by the number of nodes in the graph
+        # divided by the number of nodes reachable from the node
+        # to normalize the value
+        # This is done as how it is in SNAP (I've checked the source code)
         if normalize:
-            farness_centrality *= (len(graph.getNodes()) - 1) / \
-                (len(shortest_path[node]) - 1)
+            farness_centrality *= ((len(graph.getNodes()) - 1) /
+                                   (len(shortest_path[node]) - 1))
+        # END if normalize
 
         closeness_centrality[node] = 1.0 / farness_centrality
     # END for node in graph.getNodes()
@@ -168,8 +175,8 @@ def checkConvergence(
     curr: Dict[int, float],
     epsilon: float
 ) -> bool:
-    return all((abs(prev[node] - curr[node]) < epsilon
-                for node in prev))
+    return hypot(*(prev[node] - curr[node]
+                   for node in prev)) < epsilon
 # END checkConvergence
 
 
@@ -177,28 +184,35 @@ def getAllPageRank(
     graph: Graph,
     damping_factor: float = 0.8,
     epsilon: float = 1e-6,
-    max_iter: int = 1000
+    max_iter: int = 1_000
 ) -> Dict[int, float]:
 
-    preference: Dict[int, float] = {node: sum((-1 if graph.isNegEdge(node, v) else 1
-                                               for v in graph.getNeighbors(node)))
-                                    for node in graph.getNodes()}
-    pref_sum = sum(preference.values())
-    preference = {node: value / pref_sum
-                  for node, value in preference.items()}
-    page_rank: Dict[int, float] = preference
+    if len(graph.getNegEdges()) == 0:
+        preference: Dict[int, float] = {node: 1 / len(graph.getNodes())
+                                        for node in graph.getNodes()}
+    else:  # Only for epinions dataset there are negative edges
+        preference: Dict[int, float] = {node: sum(-1 if graph.isNegEdge(node, v) else 1
+                                                  for v in graph.getNeighbors(node))
+                                        for node in graph.getNodes()}
+        pref_sum = sum(preference.values())
+        preference = {node: value / pref_sum
+                      for node, value in preference.items()}
+    # END if len(graph.getNegEdges()) == 0
+
+    page_rank = deepcopy(preference)
 
     for i in range(max_iter):
-        page_rank_prev = page_rank.copy()
+        page_rank_prev = deepcopy(page_rank)
 
         for node in graph.getNodes():
             page_rank[node] = (1 - damping_factor) * preference[node] + \
-                damping_factor * sum((page_rank[v] / len(graph.getNeighbors(v))
-                                      for v in graph.getNeighbors(node)))
+                damping_factor * sum(page_rank_prev[v] / len(graph.getNeighbors(v))
+                                     for v in graph.getNeighbors(node))
         # END for node in graph.getNodes()
 
         # Check for convergence
         if checkConvergence(page_rank_prev, page_rank, epsilon):
+            # print(f"Converged after {i} iterations", file=sys.stderr)
             break
     # END for _ in range(max_iter)
 
@@ -209,19 +223,16 @@ def getAllPageRank(
 def getInfluencerNodes(name: str) -> int:
     LIMIT = 200
     with open(f'centralities/betweenness_{name}.txt', 'r') as fb:
-        betweenness = set([line.split()[0]
-                           for line in fb.readlines()
-                           if line[0] != '#'][:LIMIT])
+        betweenness = set([int(line.split()[0].strip())
+                           for line in fb.readlines()][:LIMIT])
 
     with open(f'centralities/closeness_{name}.txt', 'r') as fb:
-        closeness = set([line.split()[0]
-                         for line in fb.readlines()
-                         if line[0] != '#'][:LIMIT])
+        closeness = set([int(line.split()[0].strip())
+                         for line in fb.readlines()][:LIMIT])
 
     with open(f'centralities/pagerank_{name}.txt', 'r') as fb:
-        pagerank = set([line.split()[0]
-                        for line in fb.readlines()
-                        if line[0] != '#'][:LIMIT])
+        pagerank = set([int(line.split()[0].strip())
+                        for line in fb.readlines()][:LIMIT])
 
     return len(betweenness & closeness & pagerank)
 # END getInfluencerNodes
@@ -229,7 +240,6 @@ def getInfluencerNodes(name: str) -> int:
 
 def saveCentrality(centrality: Dict[int, float], name: str, cntType: str):
     with open(f'centralities/{cntType}_{name}.txt', 'w') as fb:
-        fb.write(f'# Node\t{cntType}\n')
         for node, value in sorted(centrality.items(),
                                   key=lambda x: x[1],
                                   reverse=True):
@@ -237,12 +247,6 @@ def saveCentrality(centrality: Dict[int, float], name: str, cntType: str):
         # END for node, value in sorted(centrality.items(),
     # END with open(f'centralities/{name}_{cntType}.txt', 'w')
 # END saveCentrality
-
-
-# def getSnapCloseness(graph, normalize: bool = True):
-#     return {nodeID: graph.GetClosenessCentr(nodeID, normalize)
-#             for nodeID in (node.GetId()
-#                            for node in graph.Nodes())}
 
 
 def main():
@@ -260,40 +264,25 @@ def main():
     if not os.path.exists('centralities'):
         os.makedirs('centralities')
 
-    t = perf_counter()
     # Perform Brandes algorithm to get shortest path and betweenness centrality
     shortest_path, betweenness_centrality = performBrandes(graph)
-    t = perf_counter() - t
-
-    print(f"Time taken to perform Brandes algorithm: {t:.10f} seconds",
-          file=sys.stderr)
 
     # Save betweenness centrality
     saveCentrality(betweenness_centrality, name, 'betweenness')
 
     del betweenness_centrality
 
-    t = perf_counter()
     # Get all closeness centrality
     closeness_centrality = getAllClosenessCentrality(graph, shortest_path)
-    t = perf_counter() - t
-
-    print(f"Time taken to get all closeness centrality: {t:.10f} seconds",
-          file=sys.stderr)
 
     # Save closeness centrality
     saveCentrality(closeness_centrality, name, 'closeness')
 
     del closeness_centrality
 
-    t = perf_counter()
     # Get all page rank
     DAMPING_FACTOR = 0.8
     page_rank = getAllPageRank(graph, DAMPING_FACTOR)
-    t = perf_counter() - t
-
-    print(f"Time taken to get all page rank: {t:.10f} seconds",
-          file=sys.stderr)
 
     # Save page rank
     saveCentrality(page_rank, name, 'pagerank')

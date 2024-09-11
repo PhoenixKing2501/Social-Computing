@@ -1,12 +1,9 @@
 import gzip
 import os
-import random
 import shutil
 import snap
 
 SEED = 42
-
-random.seed(SEED)
 Rnd = snap.TRnd(SEED)  # type: ignore
 Rnd.Randomize()
 
@@ -28,11 +25,13 @@ def make_facebook_graph() -> None:
 
                 # Remove all nodes that have IDs
                 # divisible by 4
-                if (u % 4 != 0) and (v % 4 != 0):
-                    f.write(f'{u}\t{v}\n')
-            # END for
-        # END with
-    # END with
+                if (u % 4 == 0) or (v % 4 == 0):
+                    continue
+
+                f.write(f'{u}\t{v}\n')
+            # END for line in fb
+        # END with open('data/facebook_combined.txt', 'r') as fb
+    # END with open('subgraphs/facebook.elist', 'w') as f
 # END make_facebook_graph
 
 
@@ -49,23 +48,23 @@ def make_epinions_graph() -> None:
                 # their signed weights
                 if (u % 5 == 0) and (v % 5 == 0):
                     f.write(f'{u}\t{v}\t{w}\n')
-            # END for
-        # END with
-    # END with
+            # END for line in ep
+        # END with open('data/soc-sign-epinions.txt', 'r') as ep
+    # END with open('subgraphs/epinions.elist', 'w') as f
 # END make_epinions_graph
 
 
 def make_random_graph() -> None:
-    NODES = 1000
-    EDGES = 50000
+    NODES = 1_000
+    EDGES = 50_000
 
-    graph = snap.GenRndGnm(snap.TUNGraph, NODES, EDGES, False)  # type: ignore
+    graph = snap.GenRndGnm(snap.TUNGraph, NODES, EDGES)  # type: ignore
     graph.SaveEdgeList('networks/random.elist')
 # END make_random_graph
 
 
 def make_smallworld_graph() -> None:
-    NODES = 1000
+    NODES = 1_000
     DEGREE = 50
     REWIRE_PROB = 0.6
 
@@ -79,6 +78,7 @@ def main():
     for file in os.listdir('data'):
         if file.endswith('.gz'):
             gunzip_file(f'data/{file}')
+    # END for file in os.listdir('data')
 
     # Make `subgraphs` directory
     if not os.path.exists('subgraphs'):
