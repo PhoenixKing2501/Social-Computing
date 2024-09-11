@@ -243,7 +243,7 @@ def saveCentrality(centrality: Dict[int, float], name: str, cntType: str):
         for node, value in sorted(centrality.items(),
                                   key=lambda x: x[1],
                                   reverse=True):
-            fb.write(f'{node}\t{value:.4f}\n')
+            fb.write(f'{node} {value:.4f}\n')
         # END for node, value in sorted(centrality.items(),
     # END with open(f'centralities/{name}_{cntType}.txt', 'w')
 # END saveCentrality

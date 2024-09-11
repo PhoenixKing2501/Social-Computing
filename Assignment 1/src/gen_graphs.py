@@ -16,7 +16,7 @@ def gunzip_file(gz_file: str) -> None:
 
 
 def make_facebook_graph() -> None:
-    with open('subgraphs/facebook.elist', 'w') as f:
+    with open('networks/facebook.elist', 'w') as f:
         with open('data/facebook_combined.txt', 'r') as fb:
             for line in fb:
                 if line[0] == '#':
@@ -31,12 +31,12 @@ def make_facebook_graph() -> None:
                 f.write(f'{u}\t{v}\n')
             # END for line in fb
         # END with open('data/facebook_combined.txt', 'r') as fb
-    # END with open('subgraphs/facebook.elist', 'w') as f
+    # END with open('networks/facebook.elist', 'w') as f
 # END make_facebook_graph
 
 
 def make_epinions_graph() -> None:
-    with open('subgraphs/epinions.elist', 'w') as f:
+    with open('networks/epinions.elist', 'w') as f:
         with open('data/soc-sign-epinions.txt', 'r') as ep:
             for line in ep:
                 if line[0] == '#':
@@ -50,7 +50,7 @@ def make_epinions_graph() -> None:
                     f.write(f'{u}\t{v}\t{w}\n')
             # END for line in ep
         # END with open('data/soc-sign-epinions.txt', 'r') as ep
-    # END with open('subgraphs/epinions.elist', 'w') as f
+    # END with open('networks/epinions.elist', 'w') as f
 # END make_epinions_graph
 
 
@@ -79,10 +79,6 @@ def main():
         if file.endswith('.gz'):
             gunzip_file(f'data/{file}')
     # END for file in os.listdir('data')
-
-    # Make `subgraphs` directory
-    if not os.path.exists('subgraphs'):
-        os.makedirs('subgraphs')
 
     # Make `networks` directory
     if not os.path.exists('networks'):
