@@ -1,0 +1,79 @@
+Name: Utsav Basu
+Roll: 20CS30057
+
+Python version used: 3.9
+
+Time Taken in my machine [m = minutes, s = seconds]
+
++------------------+-----------------+--------------------+
+|  Graph \ Task    |  gen_structure  |  gen_centralities  |
++------------------+-----------------+--------------------+
+|  Random          |  11 s           |  19 s              |
+|  Small World     |  11 s           |  18 s              |
+|  Facebook        |  27 s           |  1 m               |
+|  Epinions        |  1 m 20 s       |  4 m               |
++------------------+-----------------+--------------------+
+
+Instructions to run the code:
+
+1. Install Dependencies:
+	1.1. Requirements file is provided in the archive. To install the dependencies, run the following command:
+		$ pip install -r requirements.txt
+	
+	1.2. Also run (snap requires this library):
+		$ sudo apt install libgomp1
+
+2. Ensure the graph files are in the `data' folder, i.e. the data directory tree should be like:
+
+	data
+	+-- soc-sign-epinions.txt.gz
+	+-- facebook_combined.txt.gz
+
+3. How to run the code:
+	All codes are given in `src' folder. To run the code, follow the instructions below:
+
+	3.1. Problem 1: Dataset Preparation
+		$ python src/gen_graphs.py
+	
+		NOTE: The python script automatically creates the `networks' and `subgraphs' folders (if they don't exist) and saves the generated graphs in the respective folders.
+
+	3.2. Problem 2: Familiarizing with the SNAP Libarary
+		$ python src/gen_structure.py <path_to_graph_file>
+		eg. python src/gen_structure.py networks/random.elist
+
+		NOTE: The python script automatically creates the `plots' folder (if it doesn't exist) and saves the generated plots in the respective folder.
+	
+	3.3. Problem 3: Compute Centrality Metrics
+		$ python src/gen_centralities.py <path_to_graph_file>
+		eg. python src/gen_centralities.py networks/random.elist
+
+		NOTE: The python script automatically creates the `centralities' folder (if it doesn't exist) and saves the generated centrality metrics in the respective folder.
+
+4. Implementation Details:
+	4.1. gen_graphs.py
+		- Generates Facebook, and Epinions graphs as per the given instructions.
+		- Generates Random and Small World graphs using the SNAP library.
+		- Saves the generated graphs in the `networks' folder.
+		- Saves the subgraphs in the `subgraphs' folder.
+
+	4.2. gen_structure.py
+		- Generates the metrics of the graph as per the given instructions.
+		- Saves the generated plots in the `plots' folder.
+		- Some plots (e.g. Degree Distribution) use log scale for the axes for better visualization.
+
+	4.3. gen_centralities.py
+		4.3.1. Betweenness Centrality
+			- Using Brandes algorithm to compute the betweenness centrality metrics and all pairs shortest paths in the graph.
+			- This part takes most of the time in the computation.
+			- Saves the betweenness centrality metrics in the `centralities' folder.
+		
+		4.3.2. Closeness Centrality
+			- Using the all pairs shortest paths computed in the previous step to compute the closeness centrality metrics.
+			- To handle the disconnected graphs, the farness centrality is computed (as done in the SNAP library source code) and then the closeness centrality is computed by taking its reciprocal.
+			- Saves the closeness centrality metrics in the `centralities' folder.
+		
+		4.3.3. PageRank
+			- Implemented as taught in the class.
+			- For `epinions' graph, the preference vector is set as instructed in the assignment.
+			- Converges really fast for all the graphs. The convergence is checked by comparing the L2 norm of the difference between the previous and current PageRank vectors.
+			- Saves the PageRank centrality metrics in the `centralities' folder.
