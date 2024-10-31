@@ -1,0 +1,252 @@
+Graph:
+      A  B  C  D  E  F
+A   [[0, 1, 0, 0, 0, 0],   # A -> B
+B    [0, 0, 0, 1, 0, 1],   # B -> D, B -> F
+C    [1, 0, 0, 1, 0, 0],   # C -> A, C -> D
+D    [0, 0, 0, 0, 1, 0],   # D -> E
+E    [0, 1, 0, 0, 0, 1],   # E -> B, E -> F
+F    [0, 0, 0, 0, 0, 0]]   # No outgoing edges
+
+
+Page Rank Algorithm using Eigenvalues and Eigenvectors:
+
+Matrix M:
+[[0 1 0 0 0 0]
+ [0 0 0 1 0 1]
+ [1 0 0 1 0 0]
+ [0 0 0 0 1 0]
+ [0 1 0 0 0 1]
+ [0 0 0 0 0 0]]
+
+Matrix M after adding 1 to zero out-degree nodes:
+[[0 1 0 0 0 0]
+ [0 0 0 1 0 1]
+ [1 0 0 1 0 0]
+ [0 0 0 0 1 0]
+ [0 1 0 0 0 1]
+ [1 1 1 1 1 1]]
+
+Probability matrix P:
+[[0.         1.         0.         0.         0.         0.        ]
+ [0.         0.         0.         0.5        0.         0.5       ]
+ [0.5        0.         0.         0.5        0.         0.        ]
+ [0.         0.         0.         0.         1.         0.        ]
+ [0.         0.5        0.         0.         0.         0.5       ]
+ [0.16666667 0.16666667 0.16666667 0.16666667 0.16666667 0.16666667]]
+
+Teleportation matrix E:
+[[0.16666667 0.16666667 0.16666667 0.16666667 0.16666667 0.16666667]
+ [0.16666667 0.16666667 0.16666667 0.16666667 0.16666667 0.16666667]
+ [0.16666667 0.16666667 0.16666667 0.16666667 0.16666667 0.16666667]
+ [0.16666667 0.16666667 0.16666667 0.16666667 0.16666667 0.16666667]
+ [0.16666667 0.16666667 0.16666667 0.16666667 0.16666667 0.16666667]
+ [0.16666667 0.16666667 0.16666667 0.16666667 0.16666667 0.16666667]]
+
+alpha: 0.75
+
+A = alpha * P + (1 - alpha) * E
+
+Transition matrix A:
+[[0.04166667 0.79166667 0.04166667 0.04166667 0.04166667 0.04166667]
+ [0.04166667 0.04166667 0.04166667 0.41666667 0.04166667 0.41666667]
+ [0.41666667 0.04166667 0.04166667 0.41666667 0.04166667 0.04166667]
+ [0.04166667 0.04166667 0.04166667 0.04166667 0.79166667 0.04166667]
+ [0.04166667 0.41666667 0.04166667 0.04166667 0.04166667 0.41666667]
+ [0.16666667 0.16666667 0.16666667 0.16666667 0.16666667 0.16666667]]
+
+PageRank vector: [-0.22239727 -0.5050069  -0.16174347 -0.41177485 -0.47057461 -0.52758653]
+Sum: -2.2990836255176617
+Norm: 1.0
+
+PageRank vector:
+Node A: 0.09673301
+Node B: 0.21965573
+Node C: 0.07035128
+Node D: 0.17910390
+Node E: 0.20467920
+Node F: 0.22947688
+
+PageRank * A: [0.09673301 0.21965573 0.07035128 0.1791039  0.2046792  0.22947688]
+
+
+Page Rank Algorithm using Power Iteration (Without adding extra edges to F):
+
+Matrix M:
+[[0 1 0 0 0 0]
+ [0 0 0 1 0 1]
+ [1 0 0 1 0 0]
+ [0 0 0 0 1 0]
+ [0 1 0 0 0 1]
+ [0 0 0 0 0 0]]
+
+Iteration 1: [0.05128205 0.22435897 0.05128205 0.16666667 0.28205128 0.22435897]
+Sum: 1.0000000000000002
+
+Iteration 2: [0.07321773 0.22350674 0.05009634 0.1743738  0.20038536 0.27842004]
+Sum: 1.0
+
+Iteration 3: [0.07640791 0.21704718 0.05266362 0.18234399 0.21796043 0.25357686]
+Sum: 1.0
+
+Iteration 4: [0.07583874 0.22314632 0.05145193 0.17634621 0.22032704 0.25288977]
+Sum: 0.9999999999999999
+
+Iteration 5: [0.07522977 0.22357282 0.05141921 0.17849584 0.2146357  0.25664666]
+Sum: 1.0
+
+... After 100 iterations ...
+
+Final PageRank vector:
+Node A: 0.07543325
+Node B: 0.22218967
+Node C: 0.05153269
+Node D: 0.17848353
+Node E: 0.21709193
+Node F: 0.25526894
+
+Sum: 1.0
+Norm: 0.4492900491953291
+
+!!DOES NOT MATCH WITH EIGENVALUES AND EIGENVECTORS METHOD!!
+
+
+Page Rank Algorithm using Power Iteration (After adding extra edges to F):
+
+Matrix M:
+[[0 1 0 0 0 0]
+ [0 0 0 1 0 1]
+ [1 0 0 1 0 0]
+ [0 0 0 0 1 0]
+ [0 1 0 0 0 1]
+ [0 0 0 0 0 0]]
+
+Matrix M after adding 1 to zero out-degree nodes:
+[[0 1 0 0 0 0]
+ [0 0 0 1 0 1]
+ [1 0 0 1 0 0]
+ [0 0 0 0 1 0]
+ [0 1 0 0 0 1]
+ [1 1 1 1 1 1]]
+
+Iteration 1: [0.07291667 0.21354167 0.07291667 0.16666667 0.26041667 0.21354167]
+Sum: 1.0000000000000002
+
+Iteration 2: [0.09570312 0.22070313 0.06835938 0.17578125 0.19335938 0.24609375]
+Sum: 1.0
+
+Iteration 3: [0.09806315 0.21671549 0.07242839 0.18082682 0.20426432 0.22770182]
+Sum: 1.0
+
+Iteration 4: [0.09729004 0.22027588 0.07012939 0.17855835 0.20574951 0.22799683]
+Sum: 1.0
+
+Iteration 5: [0.09646479 0.22028987 0.07016627 0.17906825 0.20408503 0.22992579]
+Sum: 1.0000000000000002
+
+... After 100 iterations ...
+
+Final PageRank vector:
+Node A: 0.09673301
+Node B: 0.21965573
+Node C: 0.07035128
+Node D: 0.17910390
+Node E: 0.20467920
+Node F: 0.22947688
+
+Sum: 1.0
+Norm: 0.4349559054315999
+
+!!MATCHES WITH EIGENVALUES AND EIGENVECTORS METHOD!!
+
+
+Page Rank Algorithm using Power Iteration (My method):
+
+Matrix M:
+[[0 1 0 0 0 0]
+ [0 0 0 1 0 1]
+ [1 0 0 1 0 0]
+ [0 0 0 0 1 0]
+ [0 1 0 0 0 1]
+ [0 0 0 0 0 0]]
+
+Matrix M after adding 1 to zero out-degree nodes:
+[[0 1 0 0 0 0]
+ [0 0 0 1 0 1]
+ [1 0 0 1 0 0]
+ [0 0 0 0 1 0]
+ [0 1 0 0 0 1]
+ [1 1 1 1 1 1]]
+
+Iteration 1: [0.07291667 0.21354167 0.07291667 0.16666667 0.26041667 0.21354167]
+Sum: 1.0000000000000002
+
+Iteration 2: [0.09570312 0.22070313 0.06835938 0.17578125 0.19335938 0.24609375]
+Sum: 1.0
+
+Iteration 3: [0.09806315 0.21671549 0.07242839 0.18082682 0.20426432 0.22770182]
+Sum: 1.0
+
+Iteration 4: [0.09729004 0.22027588 0.07012939 0.17855835 0.20574951 0.22799683]
+Sum: 1.0
+
+Iteration 5: [0.09646479 0.22028987 0.07016627 0.17906825 0.20408503 0.22992579]
+Sum: 1.0000000000000002
+
+... After 100 iterations ...
+
+Final PageRank vector:
+Node A: 0.09673301
+Node B: 0.21965573
+Node C: 0.07035128
+Node D: 0.17910390
+Node E: 0.20467920
+Node F: 0.22947688
+
+Sum: 1.0
+Norm: 0.4349559054315999
+
+!!MATCHES WITH EIGENVALUES AND EIGENVECTORS METHOD!!
+
+
+Using snap:
+
+PageRank:
+Node 1: 0.09673300500282131
+Node 2: 0.21965573188196402
+Node 3: 0.07035127636499845
+Node 4: 0.17910390445345337
+Node 5: 0.20467920471587964
+Node 6: 0.22947687758088303
+
+!!MATCHES WITH EIGENVALUES AND EIGENVECTORS METHOD!!
+
+PageRank with phantom edges from F:
+Node 1: 0.09673300500282131
+Node 2: 0.21965573188196402
+Node 3: 0.07035127636499845
+Node 4: 0.17910390445345337
+Node 5: 0.20467920471587964
+Node 6: 0.22947687758088303
+
+!!MATCHES WITH EIGENVALUES AND EIGENVECTORS METHOD!!
+
+
+Summary of PageRank Results:
+
+1. Eigenvalues and Eigenvectors Method:
+	- Matches with Eigenvalues and Eigenvectors method.
+
+2. Power Iteration Method (Without adding extra edges to F):
+	- Does not match with Eigenvalues and Eigenvectors method.
+
+3. Power Iteration Method (After adding extra edges to F):
+	- Matches with Eigenvalues and Eigenvectors method.
+
+4. Power Iteration Method (My method):
+	- Matches with Eigenvalues and Eigenvectors method.
+
+5. Using Snap (without phantom edges from F):
+	- Matches with Eigenvalues and Eigenvectors method.
+
+6. Using Snap (with phantom edges from F):
+	- Matches with Eigenvalues and Eigenvectors method.
