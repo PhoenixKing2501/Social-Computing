@@ -1,3 +1,4 @@
 .env/**
 .vscode
 nltk_data/**
+*.pth
