@@ -2,3 +2,4 @@
 .vscode
 nltk_data/**
 *.pth
+*.joblib
